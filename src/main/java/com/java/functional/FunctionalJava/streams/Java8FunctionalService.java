@@ -290,4 +290,167 @@ public class Java8FunctionalService {
                         () -> System.out.println("No email found")
                 );
     }
+
+    // Additional Scenarios and Use Cases
+
+    // Example of finding the customer with the most phone numbers
+    public Optional<Customer> getCustomerWithMostPhoneNumbers() {
+        return dbLayer.getAllCustomer().stream()
+                .max(Comparator.comparingInt(c -> c.getPhoneNumbers().size()));
+    }
+
+    // Example of filtering customers with invalid emails
+    public List<Customer> getCustomersWithInvalidEmails() {
+        return dbLayer.getAllCustomer().stream()
+                .filter(customer -> customer.getEmail() == null || !customer.getEmail().contains("@"))
+                .collect(Collectors.toList());
+    }
+
+    // Example of grouping employees by salary ranges
+    public Map<String, List<Employees>> getEmployeesBySalaryRange() {
+        return dbLayer.getEmployees().stream()
+                .collect(Collectors.groupingBy(emp -> {
+                    double salary = emp.getSalary();
+                    if (salary < 30000) return "Low";
+                    else if (salary < 70000) return "Medium";
+                    else return "High";
+                }));
+    }
+
+    // Example of finding the average salary of all employees
+    public double getAverageSalary() {
+        return dbLayer.getEmployees().stream()
+                .mapToDouble(Employees::getSalary)
+                .average()
+                .orElse(0.0);
+    }
+
+    // Example of finding the employee with the highest salary in each grade
+    public Map<String, Optional<Employees>> getHighestPaidEmployeeByGrade() {
+        return dbLayer.getEmployees().stream()
+                .collect(Collectors.groupingBy(
+                        Employees::getGrade,
+                        Collectors.maxBy(Comparator.comparing(Employees::getSalary))
+                ));
+    }
+
+    // Example of finding the employee with the lowest salary in a specific grade
+    public Optional<Employees> getLowestPaidEmployeeInGrade(String grade) {
+        return dbLayer.getEmployees().stream()
+                .filter(emp -> emp.getGrade().equals(grade))
+                .min(Comparator.comparing(Employees::getSalary));
+    }
+
+    // Example of finding the total number of phone numbers for all customers
+    public long getTotalPhoneNumbers() {
+        return dbLayer.getAllCustomer().stream()
+                .flatMap(customer -> customer.getPhoneNumbers().stream())
+                .count();
+    }
+
+    // Example of finding the customer with the longest name
+    public Optional<Customer> getCustomerWithLongestName() {
+        return dbLayer.getAllCustomer().stream()
+                .max(Comparator.comparingInt(c -> c.getName().length()));
+    }
+
+    // Example of finding the employee with the shortest name
+    public Optional<Employees> getEmployeeWithShortestName() {
+        return dbLayer.getEmployees().stream()
+                .min(Comparator.comparingInt(emp -> emp.getName().length()));
+    }
+
+    // Example of finding the most common grade among employees
+    public Optional<String> getMostCommonGrade() {
+        return dbLayer.getEmployees().stream()
+                .collect(Collectors.groupingBy(
+                        Employees::getGrade,
+                        Collectors.counting()
+                ))
+                .entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey);
+    }
+
+    // Example of finding the least common grade among employees
+    public Optional<String> getLeastCommonGrade() {
+        return dbLayer.getEmployees().stream()
+                .collect(Collectors.groupingBy(
+                        Employees::getGrade,
+                        Collectors.counting()
+                ))
+                .entrySet().stream()
+                .min(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey);
+    }
+
+    // Example of finding the employee with the highest salary difference from the average
+    public Optional<Employees> getEmployeeWithHighestSalaryDifference() {
+        double averageSalary = getAverageSalary();
+        return dbLayer.getEmployees().stream()
+                .max(Comparator.comparingDouble(emp -> Math.abs(emp.getSalary() - averageSalary)));
+    }
+
+    // Example of finding the employee with the lowest salary difference from the average
+    public Optional<Employees> getEmployeeWithLowestSalaryDifference() {
+        double averageSalary = getAverageSalary();
+        return dbLayer.getEmployees().stream()
+                .min(Comparator.comparingDouble(emp -> Math.abs(emp.getSalary() - averageSalary)));
+    }
+
+    // Example of finding the customer with the most unique phone numbers
+    public Optional<Customer> getCustomerWithMostUniquePhoneNumbers() {
+        return dbLayer.getAllCustomer().stream()
+                .max(Comparator.comparingInt(c -> c.getPhoneNumbers().stream()
+                        .collect(Collectors.toSet())
+                        .size()));
+    }
+
+    // Example of finding the customer with the least unique phone numbers
+    public Optional<Customer> getCustomerWithLeastUniquePhoneNumbers() {
+        return dbLayer.getAllCustomer().stream()
+                .min(Comparator.comparingInt(c -> c.getPhoneNumbers().stream()
+                        .collect(Collectors.toSet())
+                        .size()));
+    }
+
+    // Example of finding the customer with the most phone numbers in a specific category
+    public Optional<Customer> getCustomerWithMostPhoneNumbersInCategory(String category) {
+        Map<Customer, String> customerMap = dbLayer.getAllCustomerAsMap();
+        return customerMap.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(category))
+                .map(Map.Entry::getKey)
+                .max(Comparator.comparingInt(c -> c.getPhoneNumbers().size()));
+    }
+
+    // Example of finding the customer with the least phone numbers in a specific category
+    public Optional<Customer> getCustomerWithLeastPhoneNumbersInCategory(String category) {
+        Map<Customer, String> customerMap = dbLayer.getAllCustomerAsMap();
+        return customerMap.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(category))
+                .map(Map.Entry::getKey)
+                .min(Comparator.comparingInt(c -> c.getPhoneNumbers().size()));
+    }
+
+    // Example of finding the customer with the most unique phone numbers in a specific category
+    public Optional<Customer> getCustomerWithMostUniquePhoneNumbersInCategory(String category) {
+        Map<Customer, String> customerMap = dbLayer.getAllCustomerAsMap();
+        return customerMap.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(category))
+                .map(Map.Entry::getKey)
+                .max(Comparator.comparingInt(c -> c.getPhoneNumbers().stream()
+                        .collect(Collectors.toSet())
+                        .size()));
+    }
+
+    // Example of finding the customer with the least unique phone numbers in a specific category
+    public Optional<Customer> getCustomerWithLeastUniquePhoneNumbersInCategory(String category) {
+        Map<Customer, String> customerMap = dbLayer.getAllCustomerAsMap();
+        return customerMap.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(category))
+                .map(Map.Entry::getKey)
+                .min(Comparator.comparingInt(c -> c.getPhoneNumbers().stream()
+                        .collect(Collectors.toSet())
+                        .size()));
+    }
 }

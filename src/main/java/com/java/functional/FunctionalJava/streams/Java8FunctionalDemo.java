@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 
 public class Java8FunctionalDemo {
@@ -192,5 +193,171 @@ public class Java8FunctionalDemo {
         long end = System.currentTimeMillis();
         System.out.println("Total salary (parallel): $" + parallelTotal);
         System.out.println("Parallel processing time: " + (end - start) + " ms");
+
+        // ===== Additional Methods Testing =====
+        System.out.println("\n===== Debug Logging Example =====");
+        // Peek for debugging
+        List<Employees> loggedEmployees = functionalService.getEmployeesWithSalaryLog();
+        System.out.println("Employees with salary logging: " + loggedEmployees.size());
+
+        System.out.println("\n===== Salary Ranges Example =====");
+        // Mapping collector
+        Map<String, List<Integer>> salaryRangesByGrade = functionalService.getSalaryRangesByGrade();
+        System.out.println("Salary ranges by grade:");
+        salaryRangesByGrade.forEach((grade, ranges) -> {
+            System.out.println("  Grade " + grade + ": " + ranges);
+        });
+
+        System.out.println("\n===== Error Handling Example =====");
+        // Optional and map with error handling
+        functionalService.printCustomerEmail(1);  // Assuming customer with ID 1 exists
+        functionalService.printCustomerEmail(999);  // Assuming customer with ID 999 doesn't exist
+
+        System.out.println("\n===== Additional Customer Analysis =====");
+        // Finding customer with most phone numbers
+        Optional<Customer> customerWithMostPhones = functionalService.getCustomerWithMostPhoneNumbers();
+        customerWithMostPhones.ifPresent(c -> 
+            System.out.println("Customer with most phone numbers: " + c.getName() + 
+                " (" + c.getPhoneNumbers().size() + " numbers)")
+        );
+
+        // Finding customers with invalid emails
+        List<Customer> customersWithInvalidEmails = functionalService.getCustomersWithInvalidEmails();
+        System.out.println("\nCustomers with invalid emails: " + customersWithInvalidEmails.size());
+        customersWithInvalidEmails.forEach(c -> 
+            System.out.println("  - " + c.getName() + ": " + c.getEmail())
+        );
+
+        System.out.println("\n===== Employee Salary Analysis =====");
+        // Grouping employees by salary range
+        Map<String, List<Employees>> employeesBySalaryRange = functionalService.getEmployeesBySalaryRange();
+        System.out.println("Employees by salary range:");
+        employeesBySalaryRange.forEach((range, emps) -> {
+            System.out.println("  " + range + " salary: " + emps.size() + " employees");
+        });
+
+        // Average salary
+        double avgSalary = functionalService.getAverageSalary();
+        System.out.println("\nAverage salary across all employees: $" + avgSalary);
+
+        // Highest paid employee by grade
+        Map<String, Optional<Employees>> highestPaidByGrade = functionalService.getHighestPaidEmployeeByGrade();
+        System.out.println("\nHighest paid employee by grade:");
+        highestPaidByGrade.forEach((grade, empOpt) -> {
+            empOpt.ifPresent(emp -> 
+                System.out.println("  Grade " + grade + ": " + emp.getName() + " ($" + emp.getSalary() + ")")
+            );
+        });
+
+        // Lowest paid employee in grade A
+        Optional<Employees> lowestPaidGradeA = functionalService.getLowestPaidEmployeeInGrade("A");
+        System.out.println("\nLowest paid employee in Grade A:");
+        lowestPaidGradeA.ifPresent(emp -> 
+            System.out.println("  " + emp.getName() + " ($" + emp.getSalary() + ")")
+        );
+
+        System.out.println("\n===== Phone Number Analysis =====");
+        // Total phone numbers
+        long totalPhoneNumbers = functionalService.getTotalPhoneNumbers();
+        System.out.println("Total phone numbers across all customers: " + totalPhoneNumbers);
+
+        System.out.println("\n===== Name Length Analysis =====");
+        // Customer with longest name
+        Optional<Customer> customerWithLongestName = functionalService.getCustomerWithLongestName();
+        customerWithLongestName.ifPresent(c -> 
+            System.out.println("Customer with longest name: " + c.getName() + 
+                " (" + c.getName().length() + " characters)")
+        );
+
+        // Employee with shortest name
+        Optional<Employees> employeeWithShortestName = functionalService.getEmployeeWithShortestName();
+        employeeWithShortestName.ifPresent(emp -> 
+            System.out.println("Employee with shortest name: " + emp.getName() + 
+                " (" + emp.getName().length() + " characters)")
+        );
+
+        System.out.println("\n===== Grade Analysis =====");
+        // Most common grade
+        Optional<String> mostCommonGrade = functionalService.getMostCommonGrade();
+        mostCommonGrade.ifPresent(grade -> 
+            System.out.println("Most common grade: " + grade + 
+                " (" + employeeCountByGrade.get(grade) + " employees)")
+        );
+
+        // Least common grade
+        Optional<String> leastCommonGrade = functionalService.getLeastCommonGrade();
+        leastCommonGrade.ifPresent(grade -> 
+            System.out.println("Least common grade: " + grade + 
+                " (" + employeeCountByGrade.get(grade) + " employees)")
+        );
+
+        System.out.println("\n===== Salary Difference Analysis =====");
+        // Employee with highest salary difference from average
+        Optional<Employees> empWithHighestDiff = functionalService.getEmployeeWithHighestSalaryDifference();
+        empWithHighestDiff.ifPresent(emp -> 
+            System.out.println("Employee with highest salary difference from average: " + 
+                emp.getName() + " ($" + emp.getSalary() + ", diff: $" + 
+                Math.abs(emp.getSalary() - avgSalary) + ")")
+        );
+
+        // Employee with lowest salary difference from average
+        Optional<Employees> empWithLowestDiff = functionalService.getEmployeeWithLowestSalaryDifference();
+        empWithLowestDiff.ifPresent(emp -> 
+            System.out.println("Employee with lowest salary difference from average: " + 
+                emp.getName() + " ($" + emp.getSalary() + ", diff: $" + 
+                Math.abs(emp.getSalary() - avgSalary) + ")")
+        );
+
+        System.out.println("\n===== Unique Phone Numbers Analysis =====");
+        // Customer with most unique phone numbers
+        Optional<Customer> customerWithMostUniquePhones = functionalService.getCustomerWithMostUniquePhoneNumbers();
+        customerWithMostUniquePhones.ifPresent(c -> {
+            int uniqueCount = c.getPhoneNumbers().stream().distinct().toList().size();
+            System.out.println("Customer with most unique phone numbers: " + c.getName() + 
+                " (" + uniqueCount + " unique numbers)");
+        });
+
+        // Customer with least unique phone numbers
+        Optional<Customer> customerWithLeastUniquePhones = functionalService.getCustomerWithLeastUniquePhoneNumbers();
+        customerWithLeastUniquePhones.ifPresent(c -> {
+            int uniqueCount = c.getPhoneNumbers().stream().distinct().toList().size();
+            System.out.println("Customer with least unique phone numbers: " + c.getName() + 
+                " (" + uniqueCount + " unique numbers)");
+        });
+
+        System.out.println("\n===== Category-based Phone Number Analysis =====");
+        // Customer with most phone numbers in Premium category
+        Optional<Customer> premiumCustomerWithMostPhones = 
+            functionalService.getCustomerWithMostPhoneNumbersInCategory("Premium");
+        premiumCustomerWithMostPhones.ifPresent(c -> 
+            System.out.println("Premium customer with most phone numbers: " + c.getName() + 
+                " (" + c.getPhoneNumbers().size() + " numbers)")
+        );
+
+        // Customer with least phone numbers in Regular category
+        Optional<Customer> regularCustomerWithLeastPhones = 
+            functionalService.getCustomerWithLeastPhoneNumbersInCategory("Regular");
+        regularCustomerWithLeastPhones.ifPresent(c -> 
+            System.out.println("Regular customer with least phone numbers: " + c.getName() + 
+                " (" + c.getPhoneNumbers().size() + " numbers)")
+        );
+
+        // Customer with most unique phone numbers in Premium category
+        Optional<Customer> premiumCustomerWithMostUniquePhones = 
+            functionalService.getCustomerWithMostUniquePhoneNumbersInCategory("Premium");
+        premiumCustomerWithMostUniquePhones.ifPresent(c -> {
+            int uniqueCount = c.getPhoneNumbers().stream().distinct().toList().size();
+            System.out.println("Premium customer with most unique phone numbers: " + c.getName() + 
+                " (" + uniqueCount + " unique numbers)");
+        });
+
+        // Customer with least unique phone numbers in Regular category
+        Optional<Customer> regularCustomerWithLeastUniquePhones = 
+            functionalService.getCustomerWithLeastUniquePhoneNumbersInCategory("Regular");
+        regularCustomerWithLeastUniquePhones.ifPresent(c -> {
+            int uniqueCount = c.getPhoneNumbers().stream().distinct().toList().size();
+            System.out.println("Regular customer with least unique phone numbers: " + c.getName() + 
+                " (" + uniqueCount + " unique numbers)");
+        });
     }
 }

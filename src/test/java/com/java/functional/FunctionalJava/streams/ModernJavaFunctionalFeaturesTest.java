@@ -2,8 +2,11 @@ package com.java.functional.FunctionalJava.streams;
 
 import com.java.functional.FunctionalJava.dto.Customer;
 import com.java.functional.FunctionalJava.dto.Employees;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -35,6 +38,12 @@ class ModernJavaFunctionalFeaturesTest {
         // Initialize real DbLayer for most tests
         dbLayer = new DbLayer();
         modernFeatures = new ModernJavaFunctionalFeatures(dbLayer);
+    }
+    
+    @AfterEach
+    void tearDown() {
+        // Restore original System.out
+        System.setOut(originalOut);
     }
 
     @Test
@@ -121,16 +130,16 @@ class ModernJavaFunctionalFeaturesTest {
     @Test
     void testGetOptionalAsStream() {
         // Empty Optional should produce empty stream
-        assertEquals(0, modernFeatures.getOptionalAsStream(Optional.empty()).count());
+        Stream<String> emptyStream = modernFeatures.getOptionalAsStream(Optional.empty());
+        assertEquals(0, emptyStream.count());
         
         // Non-empty Optional should produce stream with one element
         String testValue = "test";
-        Stream<String> result = modernFeatures.getOptionalAsStream(Optional.of(testValue));
+        Stream<String> resultStream = modernFeatures.getOptionalAsStream(Optional.of(testValue));
         
-        assertEquals(1, result.count());
-        
-        // Test that the stream contains the expected value
-        assertEquals(testValue, modernFeatures.getOptionalAsStream(Optional.of(testValue)).findFirst().orElse(null));
+        List<String> resultList = resultStream.toList();
+        assertEquals(1, resultList.size());
+        assertEquals(testValue, resultList.get(0));
     }
 
     @Test
@@ -409,5 +418,78 @@ class ModernJavaFunctionalFeaturesTest {
             // On older Java versions, these should throw exceptions
             assertThrows(Exception.class, () -> modernFeatures.getFirstAndLastCustomer());
         }
+    }
+    
+    @Test
+    void testPersonRecords() {
+        // Test Employee record
+        ModernJavaFunctionalFeatures.Employee employee = new ModernJavaFunctionalFeatures.Employee("John", 75000);
+        assertEquals("John", employee.name());
+        assertEquals(75000, employee.salary());
+        
+        // Test Manager record
+        ModernJavaFunctionalFeatures.Manager manager = new ModernJavaFunctionalFeatures.Manager("Alice", 120000, 5);
+        assertEquals("Alice", manager.name());
+        assertEquals(120000, manager.salary());
+        assertEquals(5, manager.directReports());
+        
+        // Test Contractor record
+        ModernJavaFunctionalFeatures.Contractor contractor = new ModernJavaFunctionalFeatures.Contractor("Bob", 500);
+        assertEquals("Bob", contractor.name());
+        assertEquals(500, contractor.dailyRate());
+        
+        // Test Point record
+        ModernJavaFunctionalFeatures.Point point = new ModernJavaFunctionalFeatures.Point(10, 20);
+        assertEquals(10, point.x());
+        assertEquals(20, point.y());
+        
+        // Test equals and hashCode for records
+        ModernJavaFunctionalFeatures.Employee employee2 = new ModernJavaFunctionalFeatures.Employee("John", 75000);
+        assertEquals(employee, employee2);
+        assertEquals(employee.hashCode(), employee2.hashCode());
+        
+        ModernJavaFunctionalFeatures.Employee differentEmployee = new ModernJavaFunctionalFeatures.Employee("John", 80000);
+        assertNotEquals(employee, differentEmployee);
+    }
+    
+    @Test
+    void testSalaryStatsRecord() {
+        // Test SalaryStats record
+        ModernJavaFunctionalFeatures.SalaryStats stats = new ModernJavaFunctionalFeatures.SalaryStats(30000, 90000, 60000);
+        assertEquals(30000, stats.min());
+        assertEquals(90000, stats.max());
+        assertEquals(60000, stats.average());
+        
+        // Test toString
+        String statsString = stats.toString();
+        assertTrue(statsString.contains("min=30000.0"));
+        assertTrue(statsString.contains("max=90000.0"));
+        assertTrue(statsString.contains("average=60000.0"));
+        
+        // Test equals and hashCode
+        ModernJavaFunctionalFeatures.SalaryStats sameStats = new ModernJavaFunctionalFeatures.SalaryStats(30000, 90000, 60000);
+        assertEquals(stats, sameStats);
+        assertEquals(stats.hashCode(), sameStats.hashCode());
+        
+        ModernJavaFunctionalFeatures.SalaryStats differentStats = new ModernJavaFunctionalFeatures.SalaryStats(30000, 90000, 65000);
+        assertNotEquals(stats, differentStats);
+    }
+    
+    @Test
+    void testGetSalaryStatsWithEmptyEmployeeList() {
+        // Create a mock DbLayer that returns an empty list
+        DbLayer mockDbLayer = mock(DbLayer.class);
+        when(mockDbLayer.getEmployees()).thenReturn(List.of());
+        
+        // Create instance with mock
+        ModernJavaFunctionalFeatures featuresWithMock = new ModernJavaFunctionalFeatures(mockDbLayer);
+        
+        // Test getSalaryStats with empty list
+        ModernJavaFunctionalFeatures.SalaryStats stats = featuresWithMock.getSalaryStats();
+        
+        // Should return default values
+        assertEquals(0.0, stats.min());
+        assertEquals(0.0, stats.max());
+        assertEquals(0.0, stats.average());
     }
 } 

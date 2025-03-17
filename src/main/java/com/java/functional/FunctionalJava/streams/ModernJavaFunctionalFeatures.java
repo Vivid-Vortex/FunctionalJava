@@ -398,6 +398,22 @@ public class ModernJavaFunctionalFeatures {
         }
     }
 
+    /**
+     * Java 16: Record for pattern matching
+     * 
+     * Records provide a compact syntax for classes that are transparent holders
+     * for shallowly immutable data.
+     * 
+     * Benefits:
+     * 1. Automatic getters (component accessors)
+     * 2. Automatic equals(), hashCode(), and toString()
+     * 3. Automatic constructor
+     * 4. Immutable by default
+     * 
+     * This record is used for demonstrating record patterns in Java 21.
+     */
+    public record Point(int x, int y) {}
+
     //==========================================================================
     // Java 17 Features (Released September 2021)
     //==========================================================================
@@ -426,6 +442,25 @@ public class ModernJavaFunctionalFeatures {
             // No default needed - compiler knows these are all possible cases
         };
     }
+
+    /**
+     * Java 17: Sealed class hierarchy
+     * 
+     * A sealed interface with three permitted implementations as records.
+     * The 'sealed' keyword restricts which classes can implement this interface.
+     * The 'permits' clause explicitly lists allowed implementations.
+     * 
+     * Each permitted class must use one of:
+     * - final: Cannot be extended further
+     * - sealed: Restricted subclasses
+     * - non-sealed: Can be freely extended
+     * 
+     * Records are implicitly final, so they satisfy this requirement.
+     */
+    public sealed interface Person permits Employee, Manager, Contractor {}
+    public record Employee(String name, double salary) implements Person {}
+    public record Manager(String name, double salary, int directReports) implements Person {}
+    public record Contractor(String name, double dailyRate) implements Person {}
 
     //==========================================================================
     // Java 19-21 Features (Released September 2022 - September 2023)
@@ -501,39 +536,4 @@ public class ModernJavaFunctionalFeatures {
         }
         return "Not a point";
     }
-}
-
-/**
- * Java 17: Sealed class hierarchy
- * 
- * A sealed interface with three permitted implementations as records.
- * The 'sealed' keyword restricts which classes can implement this interface.
- * The 'permits' clause explicitly lists allowed implementations.
- * 
- * Each permitted class must use one of:
- * - final: Cannot be extended further
- * - sealed: Restricted subclasses
- * - non-sealed: Can be freely extended
- * 
- * Records are implicitly final, so they satisfy this requirement.
- */
-sealed interface Person permits Employee, Manager, Contractor {}
-record Employee(String name, double salary) implements Person {}
-record Manager(String name, double salary, int directReports) implements Person {}
-record Contractor(String name, double dailyRate) implements Person {}
-
-/**
- * Java 16: Record for pattern matching
- * 
- * Records provide a compact syntax for classes that are transparent holders
- * for shallowly immutable data.
- * 
- * Benefits:
- * 1. Automatic getters (component accessors)
- * 2. Automatic equals(), hashCode(), and toString()
- * 3. Automatic constructor
- * 4. Immutable by default
- * 
- * This record is used for demonstrating record patterns in Java 21.
- */
-record Point(int x, int y) {} 
+} 

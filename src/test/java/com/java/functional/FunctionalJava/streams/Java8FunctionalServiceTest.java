@@ -736,7 +736,7 @@ public class Java8FunctionalServiceTest {
 //        if (customer.isPresent()) {
 //            // Check that no customer in the same category has fewer unique phone numbers
 //            int minUniquePhoneNumbers = (int) customer.get().getPhoneNumbers().stream().distinct().count();
-//            
+//
 //            Map<Customer, String> customerMap = dbLayer.getAllCustomerAsMap();
 //            customerMap.entrySet().stream()
 //                    .filter(entry -> category.equals(entry.getValue()))

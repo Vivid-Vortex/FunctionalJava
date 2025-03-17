@@ -1,6 +1,7 @@
 package com.java.functional.FunctionalJava.streams;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -88,7 +89,7 @@ public class ModernJavaFunctionalFeatures {
     public List<Integer> getNumbersUntilGreaterThan100() {
         return Stream.iterate(1, n -> n + 10)
                 .takeWhile(n -> n <= 100)
-                .collect(Collectors.toList());
+                .toList();  // Using Java 16's toList() instead of collect(Collectors.toList())
     }
 
     /**
@@ -108,7 +109,7 @@ public class ModernJavaFunctionalFeatures {
         return Stream.iterate(1, n -> n + 10)
                 .dropWhile(n -> n < 50)
                 .limit(5)
-                .collect(Collectors.toList());
+                .toList();  // Using Java 16's toList() instead of collect(Collectors.toList())
     }
 
     /**
@@ -167,11 +168,11 @@ public class ModernJavaFunctionalFeatures {
         var customers = dbLayer.getAllCustomer();  // Instead of List<Customer> customers
         var filteredCustomers = customers.stream()
                 .filter(c -> c.getEmail() != null)
-                .collect(Collectors.toList());  // Instead of List<Customer> filteredCustomers
+                .toList();  // Using Java 16's toList() instead of collect(Collectors.toList())
         
         return filteredCustomers.stream()
                 .map(c -> c.getName() + ": " + c.getEmail())
-                .collect(Collectors.toList());
+                .toList();  // Using Java 16's toList() instead of collect(Collectors.toList())
     }
 
     //==========================================================================
@@ -199,7 +200,7 @@ public class ModernJavaFunctionalFeatures {
         return strings.stream()
                 .filter(Predicate.not(String::isBlank))  // Instead of s -> !s.isBlank()
                 .map(String::strip)  // Unicode-aware trim
-                .collect(Collectors.toList());
+                .toList();  // Using Java 16's toList() instead of collect(Collectors.toList())
     }
 
     /**
@@ -285,17 +286,13 @@ public class ModernJavaFunctionalFeatures {
      * This makes switch more functional and less error-prone.
      */
     public String getGradeDescription(String grade) {
-        if (grade == null) {
-            return "Unknown Grade";
-        }
-        
         return switch (grade) {
             case "A" -> "Excellent";       // Arrow syntax, no break needed
             case "B" -> "Good";
             case "C" -> "Average";
             case "D" -> "Below Average";
             case "F" -> "Failing";
-            default -> "Unknown Grade";    // Required for exhaustiveness
+            case null, default -> "Unknown Grade";    // Required for exhaustiveness, handling null
         };
     }
 
@@ -391,15 +388,12 @@ public class ModernJavaFunctionalFeatures {
      * 4. The pattern variable is scoped to the if block
      */
     public String processObject(Object obj) {
-        if (obj instanceof String s) {  // Pattern variable 's' is bound if obj is a String
-            return "String of length " + s.length();
-        } else if (obj instanceof Integer i) {  // Pattern variable 'i' is bound if obj is an Integer
-            return "Integer with value " + i;
-        } else if (obj instanceof List<?> list) {  // Works with generics too
-            return "List with " + list.size() + " elements";
-        } else {
-            return "Unknown object type";
-        }
+        return switch (obj) {
+            case String s -> "String of length " + s.length();
+            case Integer i -> "Integer with value " + i;
+            case List<?> list -> "List with " + list.size() + " elements";
+            case null, default -> "Unknown object type";
+        };
     }
 
     /**
@@ -444,6 +438,7 @@ public class ModernJavaFunctionalFeatures {
             case Manager m -> "Manager with " + m.directReports() + " direct reports";
             case Contractor c -> "Contractor with daily rate $" + c.dailyRate();
             // No default needed - compiler knows these are all possible cases
+            case null -> "No person provided";
         };
     }
 
@@ -506,15 +501,17 @@ public class ModernJavaFunctionalFeatures {
      * - addFirst()/addLast(): Add at beginning/end
      * - reversed(): Get a view with reversed order
      * 
-     * This example uses getFirst() and getLast() to access the first and last
-     * customers in the list.
-     * 
-     * Note: This will throw an exception on Java versions < 21.
+     * This example simulates these methods using traditional list access.
      */
     public String getFirstAndLastCustomer() {
         var customers = dbLayer.getAllCustomer();
-        var first = customers.getFirst().getName();  // Instead of get(0)
-        var last = customers.getLast().getName();    // Instead of get(size()-1)
+        if (customers == null || customers.isEmpty()) {
+            return "No customers found";
+        }
+        
+        // Using traditional list access methods
+        var first = customers.get(0).getName();
+        var last = customers.get(customers.size() - 1).getName();
         return "First customer: " + first + ", Last customer: " + last;
     }
 
@@ -529,15 +526,89 @@ public class ModernJavaFunctionalFeatures {
      * 2. Nested pattern matching for complex data structures
      * 3. More declarative code style
      * 
-     * This example checks if an object is a Point record and extracts
-     * its x and y coordinates in a single step.
-     * 
-     * Note: This will throw an exception on Java versions < 21.
+     * This example simulates record pattern matching using traditional instanceof.
      */
     public String processPoint(Object obj) {
-        if (obj instanceof Point(int x, int y)) {  // Destructures Point into x and y components
-            return "Point at coordinates (%d, %d)".formatted(x, y);
+        // Using traditional instanceof with pattern variable
+        if (obj instanceof Point point) {
+            return "Point at coordinates (%d, %d)".formatted(point.x(), point.y());
         }
         return "Not a point";
+    }
+    
+    /**
+     * Java 21: Pattern matching for switch with record patterns
+     * 
+     * This feature allows for powerful pattern matching in switch expressions,
+     * including record patterns and guarded patterns.
+     * 
+     * Benefits:
+     * 1. Directly access record components without getter methods
+     * 2. Nested pattern matching for complex data structures
+     * 3. More declarative code style with guards
+     * 
+     * This example simulates pattern matching with if-else statements.
+     */
+    public String describeShape(Object obj) {
+        // Using traditional instanceof with pattern variable
+        if (obj instanceof Point p) {
+            if (p.x() == p.y()) {
+                return "Square point at " + p.x();
+            } else if (p.x() == 0) {
+                return "Point on y-axis at y=" + p.y();
+            } else if (p.y() == 0) {
+                return "Point on x-axis at x=" + p.x();
+            } else {
+                return "Point at (" + p.x() + ", " + p.y() + ")";
+            }
+        }
+        return "Not a recognized shape";
+    }
+    
+    /**
+     * Java 21: String templates (Preview feature)
+     * 
+     * String templates provide a more powerful way to create formatted strings
+     * than string concatenation or String.format().
+     * 
+     * Since this is a preview feature, we're simulating it with text blocks and formatting.
+     */
+    public String createTemplatedString(String name, int age, String occupation) {
+        // Simulating string templates with text blocks and formatting
+        return """
+               Profile Information:
+               Name: %s
+               Age: %d
+               Occupation: %s
+               Years until retirement: %d
+               """.formatted(name, age, occupation, 65 - age);
+    }
+    
+    /**
+     * Java 21: Unnamed patterns and variables (Preview feature)
+     * 
+     * Unnamed patterns allow you to match a pattern without binding it to a variable.
+     * This is useful when you need to check the type but don't need to use the value.
+     * 
+     * Since this is a preview feature, we're simulating it with regular pattern matching.
+     */
+    public boolean isValidShape(Object obj) {
+        // Simulating unnamed patterns
+        return obj instanceof Point;
+    }
+    
+    /**
+     * Java 21: Scoped values (Preview feature)
+     * 
+     * Scoped values provide a way to share data between methods without passing parameters,
+     * similar to ThreadLocal but with better performance and safety.
+     * 
+     * Since this is a preview feature, we're simulating it with method parameters.
+     */
+    public List<String> processWithContext(String context, List<String> items) {
+        // Simulating scoped values with regular parameters
+        return items.stream()
+                .map(item -> context + ": " + item)
+                .toList();
     }
 } 

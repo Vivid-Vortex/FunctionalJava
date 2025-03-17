@@ -295,6 +295,8 @@ class ModernJavaFunctionalFeaturesTest {
         
         assertEquals("Contractor with daily rate $500.0", 
                 modernFeatures.describePerson(new ModernJavaFunctionalFeatures.Contractor("Bob", 500)));
+        
+        assertEquals("No person provided", modernFeatures.describePerson(null));
     }
 
     @Test
@@ -315,43 +317,60 @@ class ModernJavaFunctionalFeaturesTest {
 
     @Test
     void testGetFirstAndLastCustomer() {
-        try {
-            String result = modernFeatures.getFirstAndLastCustomer();
-            
-            assertNotNull(result);
-            assertTrue(result.startsWith("First customer:"));
-            assertTrue(result.contains("Last customer:"));
-            
-            // Verify it contains the actual first and last customer names
-            List<Customer> customers = dbLayer.getAllCustomer();
-            String expectedFirst = customers.get(0).getName();
-            String expectedLast = customers.get(customers.size() - 1).getName();
-            
-            assertTrue(result.contains(expectedFirst));
-            assertTrue(result.contains(expectedLast));
-        } catch (Exception e) {
-            // Skip test if running on Java < 21
-            System.out.println("Skipping SequencedCollection test: " + e.getMessage());
-        }
+        String result = modernFeatures.getFirstAndLastCustomer();
+        
+        assertNotNull(result);
+        assertTrue(result.startsWith("First customer:"));
+        assertTrue(result.contains("Last customer:"));
+        
+        // Verify it contains the actual first and last customer names
+        List<Customer> customers = dbLayer.getAllCustomer();
+        String expectedFirst = customers.get(0).getName();
+        String expectedLast = customers.get(customers.size() - 1).getName();
+        
+        assertTrue(result.contains(expectedFirst));
+        assertTrue(result.contains(expectedLast));
+        
+        // Test null safety
+        DbLayer mockDbLayer = mock(DbLayer.class);
+        when(mockDbLayer.getAllCustomer()).thenReturn(null);
+        ModernJavaFunctionalFeatures features = new ModernJavaFunctionalFeatures(mockDbLayer);
+        assertEquals("No customers found", features.getFirstAndLastCustomer());
+        
+        // Test empty list safety
+        when(mockDbLayer.getAllCustomer()).thenReturn(List.of());
+        assertEquals("No customers found", features.getFirstAndLastCustomer());
     }
 
     @Test
     void testProcessPoint() {
-        try {
-            ModernJavaFunctionalFeatures.Point point = new ModernJavaFunctionalFeatures.Point(10, 20);
-            
-            assertEquals("Point at coordinates (10, 20)", 
-                    modernFeatures.processPoint(point));
-            
-            assertEquals("Not a point", 
-                    modernFeatures.processPoint("Not a point"));
-            
-            assertEquals("Not a point", 
-                    modernFeatures.processPoint(null));
-        } catch (Exception e) {
-            // Skip test if running on Java < 21
-            System.out.println("Skipping Record Pattern test: " + e.getMessage());
-        }
+        ModernJavaFunctionalFeatures.Point point = new ModernJavaFunctionalFeatures.Point(10, 20);
+        
+        assertEquals("Point at coordinates (10, 20)", 
+                modernFeatures.processPoint(point));
+        
+        assertEquals("Not a point", 
+                modernFeatures.processPoint("Not a point"));
+        
+        assertEquals("Not a point", 
+                modernFeatures.processPoint(null));
+    }
+    
+    @Test
+    void testDescribeShape() {
+        ModernJavaFunctionalFeatures.Point point = new ModernJavaFunctionalFeatures.Point(5, 10);
+        assertEquals("Point at (5, 10)", modernFeatures.describeShape(point));
+        
+        ModernJavaFunctionalFeatures.Point squarePoint = new ModernJavaFunctionalFeatures.Point(7, 7);
+        assertEquals("Square point at 7", modernFeatures.describeShape(squarePoint));
+        
+        ModernJavaFunctionalFeatures.Point xAxisPoint = new ModernJavaFunctionalFeatures.Point(5, 0);
+        assertEquals("Point on x-axis at x=5", modernFeatures.describeShape(xAxisPoint));
+        
+        ModernJavaFunctionalFeatures.Point yAxisPoint = new ModernJavaFunctionalFeatures.Point(0, 10);
+        assertEquals("Point on y-axis at y=10", modernFeatures.describeShape(yAxisPoint));
+        
+        assertEquals("Not a recognized shape", modernFeatures.describeShape("Not a shape"));
     }
     
     @Test
@@ -394,30 +413,27 @@ class ModernJavaFunctionalFeaturesTest {
     }
     
     @Test
-    void testJava21FeaturesWithVersionCheck() {
-        // This test demonstrates how to conditionally run tests based on Java version
-        String javaVersion = System.getProperty("java.version");
-        System.out.println("Running on Java version: " + javaVersion);
+    void testJava21Features() {
+        // Test string templates simulation
+        String templatedString = modernFeatures.createTemplatedString("John Doe", 35, "Developer");
+        assertTrue(templatedString.contains("Name: John Doe"));
+        assertTrue(templatedString.contains("Age: 35"));
+        assertTrue(templatedString.contains("Occupation: Developer"));
+        assertTrue(templatedString.contains("Years until retirement: 30"));
         
-        if (javaVersion.startsWith("21") || 
-            javaVersion.startsWith("22") || 
-            javaVersion.compareTo("21") >= 0) {
-            
-            // These should work on Java 21+
-            try {
-                String result = modernFeatures.getFirstAndLastCustomer();
-                assertNotNull(result);
-                
-                ModernJavaFunctionalFeatures.Point point = new ModernJavaFunctionalFeatures.Point(5, 10);
-                String pointResult = modernFeatures.processPoint(point);
-                assertEquals("Point at coordinates (5, 10)", pointResult);
-            } catch (Exception e) {
-                fail("Java 21 features should work on Java 21+: " + e.getMessage());
-            }
-        } else {
-            // On older Java versions, these should throw exceptions
-            assertThrows(Exception.class, () -> modernFeatures.getFirstAndLastCustomer());
-        }
+        // Test unnamed patterns simulation
+        ModernJavaFunctionalFeatures.Point point = new ModernJavaFunctionalFeatures.Point(5, 10);
+        assertTrue(modernFeatures.isValidShape(point));
+        assertFalse(modernFeatures.isValidShape("Not a shape"));
+        
+        // Test scoped values simulation
+        List<String> items = List.of("apple", "banana", "cherry");
+        List<String> processedItems = modernFeatures.processWithContext("Fruit", items);
+        
+        assertEquals(3, processedItems.size());
+        assertEquals("Fruit: apple", processedItems.get(0));
+        assertEquals("Fruit: banana", processedItems.get(1));
+        assertEquals("Fruit: cherry", processedItems.get(2));
     }
     
     @Test

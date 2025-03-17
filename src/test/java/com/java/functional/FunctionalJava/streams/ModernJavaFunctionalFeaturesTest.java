@@ -1,23 +1,38 @@
 package com.java.functional.FunctionalJava.streams;
 
+import com.java.functional.FunctionalJava.dto.Customer;
+import com.java.functional.FunctionalJava.dto.Employees;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class ModernJavaFunctionalFeaturesTest {
 
     private ModernJavaFunctionalFeatures modernFeatures;
     private DbLayer dbLayer;
+    
+    // For capturing console output in tests
+    private final ByteArrayOutputStream outputStreamCaptor = new ByteArrayOutputStream();
+    private final PrintStream originalOut = System.out;
 
     @BeforeEach
     void setUp() {
+        // Set up System.out capture
+        System.setOut(new PrintStream(outputStreamCaptor));
+        
+        // Initialize real DbLayer for most tests
         dbLayer = new DbLayer();
         modernFeatures = new ModernJavaFunctionalFeatures(dbLayer);
     }
@@ -66,6 +81,9 @@ class ModernJavaFunctionalFeaturesTest {
         
         // All numbers should be <= 100
         numbers.forEach(n -> assertTrue(n <= 100));
+        
+        // Verify the step is 10
+        assertEquals(10, numbers.get(1) - numbers.get(0));
     }
 
     @Test
@@ -82,14 +100,18 @@ class ModernJavaFunctionalFeaturesTest {
         
         // All numbers should be >= 50
         numbers.forEach(n -> assertTrue(n >= 50));
+        
+        // Verify the step is 10
+        assertEquals(10, numbers.get(1) - numbers.get(0));
     }
 
     @Test
     void testGetDefaultIfEmpty() {
         // Should throw exception for empty Optional
-        assertThrows(RuntimeException.class, () -> 
+        Exception exception = assertThrows(RuntimeException.class, () -> 
             modernFeatures.getDefaultIfEmpty(Optional.empty())
         );
+        assertEquals("Value not present", exception.getMessage());
         
         // Should return value for non-empty Optional
         String value = "test";
@@ -102,7 +124,13 @@ class ModernJavaFunctionalFeaturesTest {
         assertEquals(0, modernFeatures.getOptionalAsStream(Optional.empty()).count());
         
         // Non-empty Optional should produce stream with one element
-        assertEquals(1, modernFeatures.getOptionalAsStream(Optional.of("test")).count());
+        String testValue = "test";
+        Stream<String> result = modernFeatures.getOptionalAsStream(Optional.of(testValue));
+        
+        assertEquals(1, result.count());
+        
+        // Test that the stream contains the expected value
+        assertEquals(testValue, modernFeatures.getOptionalAsStream(Optional.of(testValue)).findFirst().orElse(null));
     }
 
     @Test
@@ -112,8 +140,17 @@ class ModernJavaFunctionalFeaturesTest {
         assertNotNull(result);
         assertFalse(result.isEmpty());
         
-        // All results should contain email addresses (with @)
-        result.forEach(s -> assertTrue(s.contains(":")));
+        // All results should contain email addresses (with @) and be formatted as "name: email"
+        result.forEach(s -> {
+            assertTrue(s.contains(":"));
+            assertTrue(s.contains("@"));
+        });
+        
+        // Number of results should match number of customers with non-null emails
+        long expectedCount = dbLayer.getAllCustomer().stream()
+                .filter(c -> c.getEmail() != null)
+                .count();
+        assertEquals(expectedCount, result.size());
     }
 
     @Test
@@ -125,7 +162,15 @@ class ModernJavaFunctionalFeaturesTest {
         assertEquals(3, result.size()); // Only 3 non-blank strings
         
         // All strings should be trimmed
-        result.forEach(s -> assertFalse(s.startsWith(" ") || s.endsWith(" ")));
+        result.forEach(s -> {
+            assertFalse(s.startsWith(" "));
+            assertFalse(s.endsWith(" "));
+        });
+        
+        // Verify specific values
+        assertTrue(result.contains("Hello"));
+        assertTrue(result.contains("World"));
+        assertTrue(result.contains("Java"));
     }
 
     @Test
@@ -138,6 +183,9 @@ class ModernJavaFunctionalFeaturesTest {
         assertEquals("One", result[0]);
         assertEquals("Two", result[1]);
         assertEquals("Three", result[2]);
+        
+        // Verify it's a String array
+        assertTrue(result instanceof String[]);
     }
 
     @Test
@@ -149,9 +197,20 @@ class ModernJavaFunctionalFeaturesTest {
         // Min should be less than or equal to max
         assertTrue(stats.min() <= stats.max());
         
-        // Average should be between min and max
+        // Average should be between min and max (or equal to min/max if all values are the same)
         assertTrue(stats.average() >= stats.min());
         assertTrue(stats.average() <= stats.max());
+        
+        // Verify actual values based on our test data
+        assertEquals(15000.0, stats.min());
+        assertEquals(95000.0, stats.max());
+        
+        // Calculate expected average
+        double expectedAverage = dbLayer.getEmployees().stream()
+                .mapToDouble(Employees::getSalary)
+                .average()
+                .orElse(0.0);
+        assertEquals(expectedAverage, stats.average());
     }
 
     @Test
@@ -162,6 +221,7 @@ class ModernJavaFunctionalFeaturesTest {
         assertEquals("Below Average", modernFeatures.getGradeDescription("D"));
         assertEquals("Failing", modernFeatures.getGradeDescription("F"));
         assertEquals("Unknown Grade", modernFeatures.getGradeDescription("X"));
+        assertEquals("Unknown Grade", modernFeatures.getGradeDescription(null));
     }
 
     @Test
@@ -181,6 +241,13 @@ class ModernJavaFunctionalFeaturesTest {
         assertTrue(report.contains("Name:"));
         assertTrue(report.contains("Grade:"));
         assertTrue(report.contains("Salary:"));
+        
+        // Verify specific employee data is included
+        assertTrue(report.contains("Aman"));
+        assertTrue(report.contains("Pankaj"));
+        
+        // Verify total employee count is included
+        assertTrue(report.contains("Total Employees: " + dbLayer.getEmployees().size()));
     }
 
     @Test
@@ -190,6 +257,14 @@ class ModernJavaFunctionalFeaturesTest {
         assertNotNull(names);
         assertFalse(names.isEmpty());
         assertEquals(dbLayer.getEmployees().size(), names.size());
+        
+        // Verify specific names are included
+        assertTrue(names.contains("Aman"));
+        assertTrue(names.contains("Bman"));
+        assertTrue(names.contains("Pankaj"));
+        
+        // Verify the list is unmodifiable (Java 16+ behavior)
+        assertThrows(UnsupportedOperationException.class, () -> names.add("NewEmployee"));
     }
 
     @Test
@@ -198,24 +273,29 @@ class ModernJavaFunctionalFeaturesTest {
         assertEquals("Integer with value 42", modernFeatures.processObject(42));
         assertEquals("List with 3 elements", modernFeatures.processObject(List.of(1, 2, 3)));
         assertEquals("Unknown object type", modernFeatures.processObject(new Object()));
+        assertEquals("Unknown object type", modernFeatures.processObject(null));
     }
 
     @Test
     void testDescribePerson() {
         assertEquals("Employee with salary $75000.0", 
-                modernFeatures.describePerson(new Employee("John", 75000)));
+                modernFeatures.describePerson(new ModernJavaFunctionalFeatures.Employee("John", 75000)));
         
         assertEquals("Manager with 5 direct reports", 
-                modernFeatures.describePerson(new Manager("Alice", 120000, 5)));
+                modernFeatures.describePerson(new ModernJavaFunctionalFeatures.Manager("Alice", 120000, 5)));
         
         assertEquals("Contractor with daily rate $500.0", 
-                modernFeatures.describePerson(new Contractor("Bob", 500)));
+                modernFeatures.describePerson(new ModernJavaFunctionalFeatures.Contractor("Bob", 500)));
     }
 
     @Test
     void testProcessDataConcurrently() throws ExecutionException, InterruptedException {
         List<String> input = List.of("java", "kotlin", "scala");
-        List<String> result = modernFeatures.processDataConcurrently(input).get();
+        CompletableFuture<List<String>> future = modernFeatures.processDataConcurrently(input);
+        
+        assertNotNull(future);
+        
+        List<String> result = future.get();
         
         assertNotNull(result);
         assertEquals(3, result.size());
@@ -224,8 +304,6 @@ class ModernJavaFunctionalFeaturesTest {
         assertEquals("SCALA", result.get(2));
     }
 
-    // Note: The following tests might fail if running on Java versions < 21
-    
     @Test
     void testGetFirstAndLastCustomer() {
         try {
@@ -234,6 +312,14 @@ class ModernJavaFunctionalFeaturesTest {
             assertNotNull(result);
             assertTrue(result.startsWith("First customer:"));
             assertTrue(result.contains("Last customer:"));
+            
+            // Verify it contains the actual first and last customer names
+            List<Customer> customers = dbLayer.getAllCustomer();
+            String expectedFirst = customers.get(0).getName();
+            String expectedLast = customers.get(customers.size() - 1).getName();
+            
+            assertTrue(result.contains(expectedFirst));
+            assertTrue(result.contains(expectedLast));
         } catch (Exception e) {
             // Skip test if running on Java < 21
             System.out.println("Skipping SequencedCollection test: " + e.getMessage());
@@ -243,14 +329,85 @@ class ModernJavaFunctionalFeaturesTest {
     @Test
     void testProcessPoint() {
         try {
+            ModernJavaFunctionalFeatures.Point point = new ModernJavaFunctionalFeatures.Point(10, 20);
+            
             assertEquals("Point at coordinates (10, 20)", 
-                    modernFeatures.processPoint(new Point(10, 20)));
+                    modernFeatures.processPoint(point));
             
             assertEquals("Not a point", 
                     modernFeatures.processPoint("Not a point"));
+            
+            assertEquals("Not a point", 
+                    modernFeatures.processPoint(null));
         } catch (Exception e) {
             // Skip test if running on Java < 21
             System.out.println("Skipping Record Pattern test: " + e.getMessage());
+        }
+    }
+    
+    @Test
+    void testWithMockedDbLayer() {
+        // Create a mock DbLayer
+        DbLayer mockDbLayer = mock(DbLayer.class);
+        
+        // Set up mock data
+        List<Customer> mockCustomers = List.of(
+            new Customer(1, "MockCustomer1", "mock1@example.com", List.of("123456")),
+            new Customer(2, "MockCustomer2", "mock2@example.com", List.of("654321"))
+        );
+        
+        List<Employees> mockEmployees = List.of(
+            new Employees(1, "MockEmployee1", "A", 50000),
+            new Employees(2, "MockEmployee2", "B", 60000)
+        );
+        
+        // Configure mock behavior
+        when(mockDbLayer.getAllCustomer()).thenReturn(mockCustomers);
+        when(mockDbLayer.getEmployees()).thenReturn(mockEmployees);
+        
+        // Create instance with mock
+        ModernJavaFunctionalFeatures featuresWithMock = new ModernJavaFunctionalFeatures(mockDbLayer);
+        
+        // Test methods that use DbLayer
+        List<String> processedCustomers = featuresWithMock.processWithVar();
+        assertEquals(2, processedCustomers.size());
+        assertTrue(processedCustomers.contains("MockCustomer1: mock1@example.com"));
+        assertTrue(processedCustomers.contains("MockCustomer2: mock2@example.com"));
+        
+        ModernJavaFunctionalFeatures.SalaryStats stats = featuresWithMock.getSalaryStats();
+        assertEquals(50000.0, stats.min());
+        assertEquals(60000.0, stats.max());
+        assertEquals(55000.0, stats.average());
+        
+        // Verify mock was called
+        verify(mockDbLayer, times(1)).getAllCustomer();
+        verify(mockDbLayer, atLeastOnce()).getEmployees();
+    }
+    
+    @Test
+    void testJava21FeaturesWithVersionCheck() {
+        // This test demonstrates how to conditionally run tests based on Java version
+        String javaVersion = System.getProperty("java.version");
+        System.out.println("Running on Java version: " + javaVersion);
+        
+        if (javaVersion.startsWith("21") || 
+            javaVersion.startsWith("22") || 
+            javaVersion.compareTo("21") >= 0) {
+            
+            // These should work on Java 21+
+            try {
+                String result = modernFeatures.getFirstAndLastCustomer();
+                assertNotNull(result);
+                
+                ModernJavaFunctionalFeatures.Point point = new ModernJavaFunctionalFeatures.Point(5, 10);
+                String pointResult = modernFeatures.processPoint(point);
+                assertEquals("Point at coordinates (5, 10)", pointResult);
+            } catch (Exception e) {
+                fail("Java 21 features should work on Java 21+: " + e.getMessage());
+            }
+        } else {
+            // On older Java versions, these should throw exceptions
+            assertThrows(Exception.class, () -> modernFeatures.getFirstAndLastCustomer());
         }
     }
 } 

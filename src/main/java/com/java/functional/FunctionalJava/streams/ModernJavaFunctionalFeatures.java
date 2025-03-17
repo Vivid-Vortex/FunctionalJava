@@ -285,6 +285,10 @@ public class ModernJavaFunctionalFeatures {
      * This makes switch more functional and less error-prone.
      */
     public String getGradeDescription(String grade) {
+        if (grade == null) {
+            return "Unknown Grade";
+        }
+        
         return switch (grade) {
             case "A" -> "Excellent";       // Arrow syntax, no break needed
             case "B" -> "Good";

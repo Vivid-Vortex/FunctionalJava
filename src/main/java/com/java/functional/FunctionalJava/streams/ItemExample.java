@@ -2,6 +2,25 @@ package com.java.functional.FunctionalJava.streams;
 
 import java.util.function.Supplier;
 
+/**
+ * `nullSafe` utility method offers several advantages over the other approaches:
+ *
+ * 1. **Conciseness**: It allows you to write the entire method chain as a single expression without breaking the flow with multiple null checks.
+ *
+ * 2. **Readability**: The code is much cleaner and easier to understand at a glance compared to nested if-statements or even the Optional chain approach.
+ *
+ * 3. **No additional dependencies**: Unlike the Guava solution, it doesn't require any external libraries.
+ *
+ * 4. **Flexibility**: It works with any depth of method chaining without modification.
+ *
+ * 5. **Simplicity**: The implementation is straightforward and easy to understand.
+ *
+ * The main tradeoff is that it uses exception handling as control flow, which some developers consider an anti-pattern. However, in this specific use case for handling null pointer exceptions in deep method chains, the benefits in code clarity and maintainability outweigh the theoretical concerns.
+ *
+ * The only potential downside is that it doesn't distinguish between different types of NPEs that might occur within the chain - it just catches any NPE and returns null. If you need more granular error handling, you might need a different approach.
+ *
+ * But for typical scenarios where you just want to safely navigate a chain of method calls with potential nulls, the `nullSafe` approach is elegantly practical.
+ */
 public class ItemExample {
     public static void main(String[] args) {
         // Create a sample item
